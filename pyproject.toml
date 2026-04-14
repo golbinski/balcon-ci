@@ -17,6 +17,32 @@ dependencies = [
 
 [project.optional-dependencies]
 bedrock = ["anthropic[bedrock]>=0.30"]
+dev = [
+    "ruff>=0.4",
+    "pytest>=8.0",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "PLC", # pylint convention (includes PLC0415 used in codebase)
+    "PLE", # pylint errors
+    "PLW", # pylint warnings
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",    # line too long — handled by formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["harness"]
 
 [project.scripts]
 balcon-ci = "harness.__main__:cli"

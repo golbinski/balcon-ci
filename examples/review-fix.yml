@@ -1,0 +1,66 @@
+# Copy this file to .github/workflows/balcon-review-fix.yml in your repository.
+#
+# Triggers balcon-ci review+fix when a PR receives the 'balcon-ci:review+fix'
+# label or a comment contains '/balcon-ci fix'.
+#
+# This mode pushes automated fix commits back to the PR branch.
+# Requires explicit developer opt-in (label or comment).
+
+name: balcon-ci review+fix
+
+on:
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+      pr_number: ${{ steps.check.outputs.pr_number }}
+      pr_head_ref: ${{ steps.check.outputs.pr_head_ref }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          RUN=false
+          PR=""
+          HEAD_REF=""
+
+          if [[ "${{ github.event_name }}" == "pull_request" && \
+                "${{ github.event.label.name }}" == "balcon-ci:review+fix" ]]; then
+            RUN=true
+            PR="${{ github.event.pull_request.number }}"
+            HEAD_REF="${{ github.event.pull_request.head.ref }}"
+          fi
+
+          if [[ "${{ github.event_name }}" == "issue_comment" && \
+                "${{ github.event.issue.pull_request }}" != "" && \
+                "${{ contains(github.event.comment.body, '/balcon-ci fix') }}" == "true" ]]; then
+            RUN=true
+            PR="${{ github.event.issue.number }}"
+            HEAD_REF=$(gh pr view "$PR" --repo "$REPO" --json headRefName -q .headRefName)
+          fi
+
+          echo "run=$RUN"             >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR"        >> "$GITHUB_OUTPUT"
+          echo "pr_head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+
+  review-fix:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    uses: your-org/balcon-ci/.github/workflows/balcon-review-fix.yml@main
+    with:
+      pr_number: ${{ fromJson(needs.gate.outputs.pr_number) }}
+      pr_head_ref: ${{ needs.gate.outputs.pr_head_ref }}
+      # harness_ref: main
+      # llm_provider: anthropic
+      # model: claude-sonnet-4-6
+      # token_budget: "500000"
+      # dry_run: false
+    secrets:
+      anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

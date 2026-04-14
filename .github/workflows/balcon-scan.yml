@@ -1,16 +1,36 @@
-name: balcon-ci scan
+name: balcon-ci / scan (reusable)
 
 on:
-  schedule:
-    - cron: "0 2 * * 1"   # Weekly on Monday at 02:00 UTC — override in repo config
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      dry_run:
-        description: "Dry run (write to Job Summary only, no GitHub changes)"
+      harness_ref:
+        description: "balcon-ci ref to install (branch, tag, or SHA)"
         required: false
-        default: "false"
-        type: choice
-        options: ["true", "false"]
+        type: string
+        default: main
+      llm_provider:
+        description: "LLM provider: anthropic or bedrock"
+        required: false
+        type: string
+        default: anthropic
+      model:
+        description: "Model ID (provider-specific)"
+        required: false
+        type: string
+        default: claude-sonnet-4-6
+      token_budget:
+        required: false
+        type: string
+        default: "500000"
+      dry_run:
+        description: "Write output to Job Summary only, no GitHub writes"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      anthropic_api_key:
+        description: "Anthropic API key — required when llm_provider=anthropic"
+        required: false
 
 permissions:
   contents: write       # to push fix branches
@@ -22,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout calling repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -38,13 +58,23 @@ jobs:
           python-version: "3.11"
 
       - name: Install balcon-ci harness
-        run: pip install --quiet .
+        run: |
+          REF="${{ inputs.harness_ref }}"
+          OWNER="${{ github.repository_owner }}"
+          if [ "${{ inputs.llm_provider }}" = "bedrock" ]; then
+            pip install --quiet \
+              "balcon-ci[bedrock] @ git+https://github.com/${OWNER}/balcon-ci.git@${REF}"
+          else
+            pip install --quiet \
+              "git+https://github.com/${OWNER}/balcon-ci.git@${REF}"
+          fi
 
       - name: Run scan
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          BALCON_TOKEN_BUDGET: ${{ vars.BALCON_TOKEN_BUDGET || '500000' }}
-          BALCON_MODEL: ${{ vars.BALCON_MODEL || 'claude-sonnet-4-6' }}
-          BALCON_DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
+          ANTHROPIC_API_KEY: ${{ secrets.anthropic_api_key }}
+          BALCON_LLM_PROVIDER: ${{ inputs.llm_provider }}
+          BALCON_MODEL: ${{ inputs.model }}
+          BALCON_TOKEN_BUDGET: ${{ inputs.token_budget }}
+          BALCON_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: balcon-ci scan

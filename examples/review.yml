@@ -1,0 +1,54 @@
+# Copy this file to .github/workflows/balcon-review.yml in your repository.
+#
+# Triggers balcon-ci read-only review when a PR receives the
+# 'balcon-ci:review' label or a comment contains '/balcon-ci review'.
+
+name: balcon-ci review
+
+on:
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+      pr_number: ${{ steps.check.outputs.pr_number }}
+    steps:
+      - id: check
+        run: |
+          RUN=false
+          PR=""
+
+          if [[ "${{ github.event_name }}" == "pull_request" && \
+                "${{ github.event.label.name }}" == "balcon-ci:review" ]]; then
+            RUN=true
+            PR="${{ github.event.pull_request.number }}"
+          fi
+
+          if [[ "${{ github.event_name }}" == "issue_comment" && \
+                "${{ github.event.issue.pull_request }}" != "" && \
+                "${{ contains(github.event.comment.body, '/balcon-ci review') }}" == "true" ]]; then
+            RUN=true
+            PR="${{ github.event.issue.number }}"
+          fi
+
+          echo "run=$RUN"       >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR"  >> "$GITHUB_OUTPUT"
+
+  review:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    uses: your-org/balcon-ci/.github/workflows/balcon-review.yml@main
+    with:
+      pr_number: ${{ fromJson(needs.gate.outputs.pr_number) }}
+      # harness_ref: main        # pin to a tag or SHA for stability
+      # llm_provider: anthropic  # or: bedrock
+      # model: claude-sonnet-4-6
+      # token_budget: "500000"
+      # dry_run: false
+    secrets:
+      anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

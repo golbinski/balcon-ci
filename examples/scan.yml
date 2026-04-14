@@ -1,0 +1,31 @@
+# Copy this file to .github/workflows/balcon-scan.yml in your repository.
+#
+# Runs a periodic codebase scan using arborist-mcp embeddings.
+# Adjust the cron schedule to suit your team's cadence.
+# Queries and exclusions are configured in .github/balcon-ci.yml.
+
+name: balcon-ci scan
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"   # Weekly, Monday 02:00 UTC — adjust as needed
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (Job Summary only, no GitHub changes)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+
+jobs:
+  scan:
+    uses: your-org/balcon-ci/.github/workflows/balcon-scan.yml@main
+    with:
+      dry_run: ${{ github.event.inputs.dry_run == 'true' }}
+      # harness_ref: main
+      # llm_provider: anthropic
+      # model: claude-sonnet-4-6
+      # token_budget: "500000"
+    secrets:
+      anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

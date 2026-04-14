@@ -10,7 +10,7 @@ Agentic code review and analysis pipeline for GitHub Actions. A multi-agent syst
 - [Pipeline modes](#pipeline-modes)
 - [Agents](#agents)
 - [Getting started](#getting-started)
-  - [1. Add to your repository via git subtree](#1-add-to-your-repository-via-git-subtree)
+  - [1. Add caller workflows to your repository](#1-add-caller-workflows-to-your-repository)
   - [2. Add secrets and variables](#2-add-secrets-and-variables)
   - [3. Create your configuration file](#3-create-your-configuration-file)
 - [Configuration reference](#configuration-reference)
@@ -29,6 +29,7 @@ Agentic code review and analysis pipeline for GitHub Actions. A multi-agent syst
 - [Safety constraints](#safety-constraints)
 - [Instruction and context files](#instruction-and-context-files)
 - [Local development](#local-development)
+- [Contributing](#contributing)
 
 ---
 
@@ -99,25 +100,27 @@ Agent names are configurable — they appear in GitHub comments and workflow log
 
 ## Getting started
 
-### 1. Add to your repository via git subtree
+### 1. Add caller workflows to your repository
 
-BalconCI is distributed as a git subtree. Add it to your repository once:
+BalconCI exposes three [reusable workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows). You do not copy or subtree any code — consuming repos simply call the centralised workflows by reference. The harness is installed at runtime directly from the `balcon-ci` repository.
 
-```bash
-git subtree add \
-  --prefix .github/balcon-ci \
-  https://github.com/your-org/balcon-ci.git main --squash
+Copy the example caller files from [`examples/`](examples/) into `.github/workflows/` in your repository and replace `your-org` with your GitHub organisation name:
+
+| Example file | Copy to | Purpose |
+|---|---|---|
+| [`examples/review.yml`](examples/review.yml) | `.github/workflows/balcon-review.yml` | Read-only PR review |
+| [`examples/review-fix.yml`](examples/review-fix.yml) | `.github/workflows/balcon-review-fix.yml` | PR review with automated fix commits |
+| [`examples/scan.yml`](examples/scan.yml) | `.github/workflows/balcon-scan.yml` | Periodic codebase scan |
+
+Add only the modes you want to use. The trigger conditions (label, comment, cron) live entirely in your caller workflow — you are free to customise them.
+
+To pin to a specific release instead of `main`, set `harness_ref` in the caller:
+
+```yaml
+uses: your-org/balcon-ci/.github/workflows/balcon-review.yml@v1.0.0
+with:
+  harness_ref: v1.0.0
 ```
-
-To pull updates later:
-
-```bash
-git subtree pull \
-  --prefix .github/balcon-ci \
-  https://github.com/your-org/balcon-ci.git main --squash
-```
-
-The subtree brings in the three workflow files and the installable harness package. Your per-repo config and instruction files stay in your repository and are never touched by updates.
 
 ### 2. Add secrets and variables
 
@@ -349,8 +352,16 @@ docs/
 git clone https://github.com/your-org/balcon-ci.git
 cd balcon-ci
 
-# Install in editable mode
-pip install -e ".[bedrock]"   # or: pip install -e .
+# Install in editable mode with dev tools
+pip install -e ".[dev]"        # includes ruff + pytest
+pip install -e ".[dev,bedrock]" # also include Bedrock SDK
+
+# Lint and format
+ruff check harness/
+ruff format harness/
+
+# Run tests
+pytest
 
 # Run a dry-run review against a real PR
 export GITHUB_TOKEN=...
@@ -358,8 +369,18 @@ export ANTHROPIC_API_KEY=...
 export GITHUB_REPOSITORY=your-org/your-repo
 export BALCON_DRY_RUN=1
 balcon-ci review --pr 42
+```
 
-# Run tests
-pip install pytest
-pytest
+## Contributing
+
+The CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request:
+
+- `ruff check` — linting (pycodestyle, pyflakes, isort, pylint subset, pyupgrade)
+- `ruff format --check` — formatting
+
+All contributions must pass both checks before merging. To fix issues locally:
+
+```bash
+ruff check --fix harness/   # auto-fix safe issues
+ruff format harness/         # auto-format
 ```

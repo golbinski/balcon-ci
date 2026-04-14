@@ -346,7 +346,11 @@ Arborist-mcp is used for `scan` mode to retrieve semantically relevant code chun
 
 ## 11. Workflow distribution
 
-BalconCI workflow definitions live in a standalone `balcon-ci` repository and are distributed to codebase repos via git subtree. Per-repo configuration (`.github/balcon-ci.yml`) and agent instruction/context files remain in each repo and are read at runtime.
+BalconCI workflow definitions live in a standalone `balcon-ci` repository and are exposed as [GitHub reusable workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows) (`on: workflow_call`). Consuming repositories do not copy or subtree any code — they add thin caller workflows that reference the centralised definitions by `uses: your-org/balcon-ci/.github/workflows/<name>.yml@<ref>`.
+
+The harness Python package is installed at runtime directly from the `balcon-ci` repository via `pip install git+https://...`, using the `harness_ref` workflow input to control the version. Callers can pin to a tag or SHA for stability.
+
+Per-repo configuration (`.github/balcon-ci.yml`) and agent instruction/context files remain in each repo and are read at runtime. Ready-to-copy example caller workflows are provided in the `examples/` directory.
 
 ---
 
@@ -376,20 +380,24 @@ harness/
     ├── fixer.py
     └── reviewer.py
 prompts/               # Markdown system prompt templates, one per role
-.github/workflows/     # Three workflow files, one per pipeline mode
+examples/              # Ready-to-copy caller workflow templates
+.github/workflows/     # Three reusable workflow files + ci.yml quality gate
 ```
 
 **Cost gate**: `CostGate` tracks cumulative token usage per pipeline run. Configured via `BALCON_TOKEN_BUDGET` env var (default 500,000 tokens). Exceeding the budget raises `BudgetExceeded`, which the pipeline catches and converts to a circuit break.
 
 **Dry-run mode**: Set `BALCON_DRY_RUN=1`. All GitHub writes (comments, commits, issues, PRs) are suppressed; a Markdown summary is written to `$GITHUB_STEP_SUMMARY` instead (visible as the GitHub Actions Job Summary). The `balcon-scan.yml` workflow exposes a `dry_run` input on `workflow_dispatch`.
 
+**Code quality**: `ruff` is the linter and formatter (`.[dev]` install extra). The `ci.yml` workflow runs `ruff check` and `ruff format --check` on every push and PR to `main`.
+
 **GitHub Actions workflows**:
 
-| File | Trigger |
-|---|---|
-| `balcon-review.yml` | PR label `balcon-ci:review` or comment `/balcon-ci review` |
-| `balcon-review-fix.yml` | PR label `balcon-ci:review+fix` or comment `/balcon-ci fix` |
-| `balcon-scan.yml` | Weekly cron (`0 2 * * 1`) or `workflow_dispatch` |
+| File | Type | Notes |
+|---|---|---|
+| `balcon-review.yml` | Reusable (`workflow_call`) | Called from consuming repo; trigger logic lives in the caller |
+| `balcon-review-fix.yml` | Reusable (`workflow_call`) | Requires `pr_head_ref` input to push fix commits to the right branch |
+| `balcon-scan.yml` | Reusable (`workflow_call`) | Caller provides cron schedule and `dry_run` dispatch input |
+| `ci.yml` | Standard | Runs ruff on the `balcon-ci` repo itself |
 
 **Environment variables** (all workflows):
 
