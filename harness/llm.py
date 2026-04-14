@@ -34,6 +34,45 @@ class LLMClient:
                 aws_region=os.environ.get("AWS_REGION", "us-east-1"),
             )
             self._complete = self._complete_anthropic  # same Messages API
+        elif provider == "foundry":
+            from anthropic import AnthropicFoundry  # noqa: PLC0415
+
+            kwargs: dict = {}
+            resource = os.environ.get("ANTHROPIC_FOUNDRY_RESOURCE")
+            base_url = os.environ.get("ANTHROPIC_FOUNDRY_BASE_URL")
+            api_key = os.environ.get("ANTHROPIC_FOUNDRY_API_KEY")
+
+            if resource:
+                kwargs["resource"] = resource
+            elif base_url:
+                kwargs["base_url"] = base_url
+            else:
+                raise ValueError(
+                    "foundry provider requires ANTHROPIC_FOUNDRY_RESOURCE "
+                    "or ANTHROPIC_FOUNDRY_BASE_URL"
+                )
+
+            if api_key:
+                kwargs["api_key"] = api_key
+            else:
+                # Entra ID path — requires azure-identity installed
+                try:
+                    from azure.identity import (  # noqa: PLC0415
+                        DefaultAzureCredential,
+                        get_bearer_token_provider,
+                    )
+                except ImportError as exc:
+                    raise ImportError(
+                        "Entra ID auth requires azure-identity: pip install 'balcon-ci[foundry]'"
+                    ) from exc
+                token_provider = get_bearer_token_provider(
+                    DefaultAzureCredential(),
+                    "https://cognitiveservices.azure.com/.default",
+                )
+                kwargs["azure_ad_token_provider"] = token_provider
+
+            self._client = AnthropicFoundry(**kwargs)
+            self._complete = self._complete_anthropic  # identical Messages API
         else:
             raise ValueError(f"Unsupported BALCON_LLM_PROVIDER: {provider!r}")
 

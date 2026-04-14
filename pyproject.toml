@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 bedrock = ["anthropic[bedrock]>=0.30"]
+foundry = ["azure-identity>=1.15"]
 dev = [
     "ruff>=0.4",
     "pytest>=8.0",

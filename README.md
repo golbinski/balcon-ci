@@ -266,6 +266,40 @@ pip install ".[bedrock]"
 
 In your workflow, replace `pip install .` with `pip install ".[bedrock]"`.
 
+### Microsoft Azure AI Foundry
+
+Routes through [Azure AI Foundry](https://ai.azure.com/) using the `AnthropicFoundry` client built into the standard `anthropic` package. Supports Anthropic Claude models hosted on Foundry. The model name is the deployment name configured in the Azure portal (defaults to the model ID).
+
+Two authentication methods are supported:
+
+**API key** — set `ANTHROPIC_FOUNDRY_API_KEY` from the Azure portal:
+
+```bash
+BALCON_LLM_PROVIDER=foundry
+BALCON_MODEL=claude-sonnet-4-6         # or your custom deployment name
+ANTHROPIC_FOUNDRY_RESOURCE=my-resource # your Azure resource name
+ANTHROPIC_FOUNDRY_API_KEY=<azure-key>
+```
+
+**Entra ID (managed identity / RBAC)** — omit the API key; `DefaultAzureCredential` is used automatically. Requires the `[foundry]` extra for `azure-identity`:
+
+```bash
+BALCON_LLM_PROVIDER=foundry
+BALCON_MODEL=claude-sonnet-4-6
+ANTHROPIC_FOUNDRY_RESOURCE=my-resource
+# no API key — auth via the Actions runner's Azure managed identity
+```
+
+```bash
+pip install ".[foundry]"
+```
+
+Alternatively, provide the full base URL instead of the resource name:
+
+```bash
+ANTHROPIC_FOUNDRY_BASE_URL=https://my-resource.services.ai.azure.com/anthropic/
+```
+
 ---
 
 ## Environment variables
@@ -274,10 +308,14 @@ In your workflow, replace `pip install .` with `pip install ".[bedrock]"`.
 |---|---|---|---|
 | `GITHUB_TOKEN` | yes | — | Supplied automatically by GitHub Actions |
 | `ANTHROPIC_API_KEY` | provider-dependent | — | Required when `BALCON_LLM_PROVIDER=anthropic` |
-| `BALCON_LLM_PROVIDER` | no | `anthropic` | LLM provider: `anthropic` or `bedrock` |
-| `BALCON_MODEL` | no | `claude-sonnet-4-6` | Model ID (format depends on provider) |
+| `BALCON_LLM_PROVIDER` | no | `anthropic` | LLM provider: `anthropic`, `bedrock`, or `foundry` |
+| `BALCON_MODEL` | no | `claude-sonnet-4-6` | Model ID or deployment name (format depends on provider) |
 | `BALCON_TOKEN_BUDGET` | no | `500000` | Maximum tokens per pipeline run. Exceeding this triggers a circuit break. |
 | `BALCON_DRY_RUN` | no | `0` | Set to `1` to suppress all GitHub writes and output to Job Summary instead. |
+| `ANTHROPIC_FOUNDRY_RESOURCE` | foundry only | — | Azure resource name (mutually exclusive with `ANTHROPIC_FOUNDRY_BASE_URL`) |
+| `ANTHROPIC_FOUNDRY_BASE_URL` | foundry only | — | Full Foundry base URL (mutually exclusive with `ANTHROPIC_FOUNDRY_RESOURCE`) |
+| `ANTHROPIC_FOUNDRY_API_KEY` | foundry + API key auth | — | Azure API key; omit to use Entra ID instead |
+| `AWS_REGION` | bedrock only | `us-east-1` | AWS region for Bedrock |
 
 ---
 

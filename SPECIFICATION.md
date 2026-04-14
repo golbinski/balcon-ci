@@ -331,10 +331,13 @@ BalconCI uses a thin wrapper over official provider SDKs rather than a third-par
 |---|---|---|
 | `anthropic` (default) | `anthropic` | `ANTHROPIC_API_KEY` |
 | `bedrock` | `anthropic[bedrock]` (Anthropic Claude on AWS Bedrock only) | `AWS_REGION` (default `us-east-1`); AWS credentials via IAM role or `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
+| `foundry` | `anthropic` + optional `azure-identity` | `ANTHROPIC_FOUNDRY_RESOURCE` or `ANTHROPIC_FOUNDRY_BASE_URL`; `ANTHROPIC_FOUNDRY_API_KEY` (API key auth) or omit for Entra ID auth |
 
-The model is selected via `BALCON_MODEL` (default: `claude-sonnet-4-6`). For Bedrock, use the Bedrock model ID format, e.g. `anthropic.claude-3-5-sonnet-20241022-v2:0`.
+The model is selected via `BALCON_MODEL` (default: `claude-sonnet-4-6`). For Bedrock, use the Bedrock model ID format (e.g. `anthropic.claude-3-5-sonnet-20241022-v2:0`). For Foundry, use the deployment name configured in the Azure portal (defaults to the model ID).
 
-`anthropic[bedrock]` is an optional install extra (`pip install ".[bedrock]"`); the base install only requires the core `anthropic` package.
+**Foundry authentication**: API key auth requires only `ANTHROPIC_FOUNDRY_API_KEY`. Entra ID (managed identity / RBAC) requires no API key but needs `azure-identity` installed (`pip install ".[foundry]"`); `DefaultAzureCredential` is used automatically.
+
+`anthropic[bedrock]` and `azure-identity` are optional install extras — the base install only requires the core `anthropic` package.
 
 ---
 
