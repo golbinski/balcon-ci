@@ -1,0 +1,50 @@
+name: balcon-ci scan
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"   # Weekly on Monday at 02:00 UTC — override in repo config
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (write to Job Summary only, no GitHub changes)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  contents: write       # to push fix branches
+  pull-requests: write  # to open fix PRs
+  issues: write         # to open human-review issues
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "balcon-ci"
+          git config user.email "balcon-ci@github-actions"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install balcon-ci harness
+        run: pip install --quiet .
+
+      - name: Run scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BALCON_TOKEN_BUDGET: ${{ vars.BALCON_TOKEN_BUDGET || '500000' }}
+          BALCON_MODEL: ${{ vars.BALCON_MODEL || 'claude-sonnet-4-6' }}
+          BALCON_DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
+        run: balcon-ci scan

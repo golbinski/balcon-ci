@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "balcon-ci"
+version = "0.1.0"
+description = "Agentic code review and analysis pipeline for GitHub Actions"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.30",
+    "pydantic>=2.0",
+    "PyGithub>=2.0",
+    "pyyaml>=6.0",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+bedrock = ["anthropic[bedrock]>=0.30"]
+
+[project.scripts]
+balcon-ci = "harness.__main__:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["harness*"]
+
+[tool.pytest.ini_options]
+testpaths = ["harness/tests"]

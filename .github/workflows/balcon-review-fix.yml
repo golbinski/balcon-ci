@@ -1,0 +1,60 @@
+name: balcon-ci review+fix
+
+on:
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write       # needed to push fix commits
+  pull-requests: write
+  issues: write
+
+jobs:
+  review-fix:
+    # Trigger on label 'balcon-ci:review+fix' OR PR comment '/balcon-ci fix'
+    if: |
+      (github.event_name == 'pull_request' && github.event.label.name == 'balcon-ci:review+fix') ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != null &&
+       contains(github.event.comment.body, '/balcon-ci fix'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Check out the PR branch so commits land on it
+          ref: ${{ github.event.pull_request.head.ref || github.event.issue.pull_request.url }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "balcon-ci"
+          git config user.email "balcon-ci@github-actions"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install balcon-ci harness
+        run: pip install --quiet .
+
+      - name: Determine PR number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run review+fix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BALCON_TOKEN_BUDGET: ${{ vars.BALCON_TOKEN_BUDGET || '500000' }}
+          BALCON_MODEL: ${{ vars.BALCON_MODEL || 'claude-sonnet-4-6' }}
+        run: balcon-ci review-fix --pr ${{ steps.pr.outputs.number }}
