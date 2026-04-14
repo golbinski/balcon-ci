@@ -70,12 +70,14 @@ class BaseAgent:
         llm: LLMClient,
         gate: CostGate,
         repo_root: Path | None = None,
+        default_model: str = "claude-sonnet-4-6",
     ) -> None:
         self._config = config
         self._llm = llm
         self._gate = gate
         self._repo_root = repo_root or Path(".")
         self.name = config.name or self.default_name
+        self._model = config.model or default_model
 
     # ------------------------------------------------------------------
     # Public interface
@@ -86,8 +88,8 @@ class BaseAgent:
         system = self._build_system_prompt()
         messages = self._build_messages(payload)
 
-        logger.info("[%s] calling LLM", self.name)
-        raw, tokens = self._llm.complete(messages, system=system)
+        logger.info("[%s] calling LLM (model=%s)", self.name, self._model)
+        raw, tokens = self._llm.complete(messages, system=system, model=self._model)
         self._gate.charge(tokens)
 
         return self._parse_output(raw)

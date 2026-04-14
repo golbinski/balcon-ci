@@ -113,6 +113,7 @@ class ReviewerOutput(BaseModel):
 
 class AgentConfig(BaseModel):
     name: str | None = None
+    model: str | None = None  # overrides BalconConfig.default_model when set
     instructions: list[str] = Field(default_factory=list)
     context: list[str] = Field(default_factory=list)
 
@@ -167,5 +168,6 @@ class AgentsConfig(BaseModel):
 
 
 class BalconConfig(BaseModel):
+    default_model: str = "claude-sonnet-4-6"
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
     codebase: CodebaseConfig = Field(default_factory=CodebaseConfig)

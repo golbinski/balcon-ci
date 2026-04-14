@@ -130,7 +130,8 @@ In your repository's **Settings → Secrets and variables → Actions**:
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Secret | When using `BALCON_LLM_PROVIDER=anthropic` (default) |
 | `BALCON_TOKEN_BUDGET` | Variable | Optional — overrides the default 500,000 token budget |
-| `BALCON_MODEL` | Variable | Optional — overrides the default model |
+
+Model selection is configured in `.github/balcon-ci.yml` via `default_model` (pipeline-wide) and `agents.<role>.model` (per agent). No environment variable is needed.
 
 AWS credentials for Bedrock are supplied via an IAM role attached to the Actions runner — no secrets needed.
 
@@ -185,6 +186,12 @@ codebase:
 
 ## Configuration reference
 
+### Top-level fields
+
+| Field | Required | Description |
+|---|---|---|
+| `default_model` | no | Model ID (or Foundry deployment name) used by all agents unless overridden. Defaults to `claude-sonnet-4-6`. |
+
 ### Agent fields
 
 These fields apply to every agent:
@@ -192,6 +199,7 @@ These fields apply to every agent:
 | Field | Required | Description |
 |---|---|---|
 | `name` | no | Display name in GitHub comments and logs. Defaults to role name. |
+| `model` | no | Model ID for this agent. Overrides `default_model` when set. |
 | `instructions` | no | Repo-relative paths to Markdown files that shape how the agent behaves. Injected into the system prompt. |
 | `context` | no | Repo-relative paths to reference documents the agent should know (standards, specs, policies). Injected as knowledge alongside the payload. |
 
@@ -244,7 +252,6 @@ The default. Uses the `anthropic` Python SDK directly.
 
 ```bash
 BALCON_LLM_PROVIDER=anthropic          # default, can be omitted
-BALCON_MODEL=claude-sonnet-4-6         # default
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
@@ -254,8 +261,13 @@ Routes through AWS Bedrock using the `anthropic[bedrock]` SDK extra. Supports An
 
 ```bash
 BALCON_LLM_PROVIDER=bedrock
-BALCON_MODEL=anthropic.claude-3-5-sonnet-20241022-v2:0
 AWS_REGION=us-east-1                   # default
+```
+
+Set the model in `.github/balcon-ci.yml` using the Bedrock model ID format (e.g. `anthropic.claude-3-5-sonnet-20241022-v2:0`):
+
+```yaml
+default_model: anthropic.claude-3-5-sonnet-20241022-v2:0
 ```
 
 Install with the Bedrock extra when using this provider:
@@ -276,16 +288,20 @@ Two authentication methods are supported:
 
 ```bash
 BALCON_LLM_PROVIDER=foundry
-BALCON_MODEL=claude-sonnet-4-6         # or your custom deployment name
 ANTHROPIC_FOUNDRY_RESOURCE=my-resource # your Azure resource name
 ANTHROPIC_FOUNDRY_API_KEY=<azure-key>
+```
+
+Set the model in `.github/balcon-ci.yml` using the Foundry deployment name (defaults to model ID if not customised):
+
+```yaml
+default_model: claude-sonnet-4-6       # or your custom deployment name
 ```
 
 **Entra ID (managed identity / RBAC)** — omit the API key; `DefaultAzureCredential` is used automatically. Requires the `[foundry]` extra for `azure-identity`:
 
 ```bash
 BALCON_LLM_PROVIDER=foundry
-BALCON_MODEL=claude-sonnet-4-6
 ANTHROPIC_FOUNDRY_RESOURCE=my-resource
 # no API key — auth via the Actions runner's Azure managed identity
 ```
@@ -309,7 +325,6 @@ ANTHROPIC_FOUNDRY_BASE_URL=https://my-resource.services.ai.azure.com/anthropic/
 | `GITHUB_TOKEN` | yes | — | Supplied automatically by GitHub Actions |
 | `ANTHROPIC_API_KEY` | provider-dependent | — | Required when `BALCON_LLM_PROVIDER=anthropic` |
 | `BALCON_LLM_PROVIDER` | no | `anthropic` | LLM provider: `anthropic`, `bedrock`, or `foundry` |
-| `BALCON_MODEL` | no | `claude-sonnet-4-6` | Model ID or deployment name (format depends on provider) |
 | `BALCON_TOKEN_BUDGET` | no | `500000` | Maximum tokens per pipeline run. Exceeding this triggers a circuit break. |
 | `BALCON_DRY_RUN` | no | `0` | Set to `1` to suppress all GitHub writes and output to Job Summary instead. |
 | `ANTHROPIC_FOUNDRY_RESOURCE` | foundry only | — | Azure resource name (mutually exclusive with `ANTHROPIC_FOUNDRY_BASE_URL`) |

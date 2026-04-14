@@ -126,11 +126,18 @@ codebase:
 
 ### Config field reference
 
+**Top-level fields**
+
+| Field | Required | Description |
+|---|---|---|
+| `default_model` | no | Model ID (or Foundry deployment name) used by all agents unless overridden. Defaults to `claude-sonnet-4-6`. |
+
 **Per-agent fields**
 
 | Field | Required | Description |
 |---|---|---|
 | `name` | no | Display name in GitHub comments and logs. Defaults to role name. |
+| `model` | no | Model ID for this agent. Overrides `default_model` when set. |
 | `instructions` | no | Paths to files that shape how the agent behaves. Injected into system prompt. |
 | `context` | no | Paths to reference documents the agent should know. Injected as knowledge alongside the payload. |
 
@@ -408,9 +415,10 @@ examples/              # Ready-to-copy caller workflow templates
 |---|---|---|---|
 | `GITHUB_TOKEN` | yes | — | GitHub Actions token |
 | `ANTHROPIC_API_KEY` | provider-dependent | — | Required when `BALCON_LLM_PROVIDER=anthropic` |
-| `BALCON_LLM_PROVIDER` | no | `anthropic` | LLM provider (`anthropic` or `bedrock`) |
-| `BALCON_MODEL` | no | `claude-sonnet-4-6` | Model ID (provider-specific) |
+| `BALCON_LLM_PROVIDER` | no | `anthropic` | LLM provider (`anthropic`, `bedrock`, or `foundry`) |
 | `BALCON_TOKEN_BUDGET` | no | `500000` | Token budget per run |
 | `BALCON_DRY_RUN` | no | `0` | Set to `1` to suppress GitHub writes |
+
+Model selection is driven entirely by `.github/balcon-ci.yml`: `default_model` sets the pipeline-wide fallback; `agents.<role>.model` overrides per agent.
 
 **Agent role prompts**: One Markdown file per role in `prompts/`. Injected as layer 2 of the four-layer instruction stack by `BaseAgent`. Contain the output JSON schema and anti-hallucination constraints for each role.

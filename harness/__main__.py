@@ -11,9 +11,12 @@ Environment variables (all optional unless noted):
     ANTHROPIC_API_KEY     required — Anthropic API key
     GITHUB_REPOSITORY     required — owner/repo (set automatically by GH Actions)
     BALCON_LLM_PROVIDER   default: anthropic
-    BALCON_MODEL          default: claude-sonnet-4-6
     BALCON_TOKEN_BUDGET   default: 500000
     BALCON_DRY_RUN        set to 1 to enable dry-run mode
+
+    Model selection is driven entirely by .github/balcon-ci.yml:
+      default_model               pipeline-wide fallback (default: claude-sonnet-4-6)
+      agents.<role>.model         per-agent override
 """
 
 from __future__ import annotations

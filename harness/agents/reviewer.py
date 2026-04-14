@@ -20,8 +20,10 @@ class ReviewerAgent(BaseAgent):
     output_schema = ReviewerOutput
     prompt_file = "reviewer.md"
 
-    def __init__(self, config: ReviewerConfig, llm, gate, repo_root=None) -> None:
-        super().__init__(config, llm, gate, repo_root)
+    def __init__(
+        self, config: ReviewerConfig, llm, gate, repo_root=None, default_model="claude-sonnet-4-6"
+    ) -> None:
+        super().__init__(config, llm, gate, repo_root, default_model)
         self._reviewer_config = config
 
     def run_on_findings(

@@ -13,15 +13,10 @@ on:
         type: string
         default: main
       llm_provider:
-        description: "LLM provider: anthropic or bedrock"
+        description: "LLM provider: anthropic, bedrock, or foundry"
         required: false
         type: string
         default: anthropic
-      model:
-        description: "Model ID (provider-specific)"
-        required: false
-        type: string
-        default: claude-sonnet-4-6
       token_budget:
         required: false
         type: string
@@ -63,6 +58,9 @@ jobs:
           if [ "${{ inputs.llm_provider }}" = "bedrock" ]; then
             pip install --quiet \
               "balcon-ci[bedrock] @ git+https://github.com/${OWNER}/balcon-ci.git@${REF}"
+          elif [ "${{ inputs.llm_provider }}" = "foundry" ]; then
+            pip install --quiet \
+              "balcon-ci[foundry] @ git+https://github.com/${OWNER}/balcon-ci.git@${REF}"
           else
             pip install --quiet \
               "git+https://github.com/${OWNER}/balcon-ci.git@${REF}"
@@ -73,7 +71,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.anthropic_api_key }}
           BALCON_LLM_PROVIDER: ${{ inputs.llm_provider }}
-          BALCON_MODEL: ${{ inputs.model }}
           BALCON_TOKEN_BUDGET: ${{ inputs.token_budget }}
           BALCON_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: balcon-ci review --pr ${{ inputs.pr_number }}

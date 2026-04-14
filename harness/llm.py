@@ -12,15 +12,12 @@ import os
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "claude-sonnet-4-6"
-
 
 class LLMClient:
     """Wraps the configured LLM provider and returns (response_text, tokens_used)."""
 
     def __init__(self) -> None:
         provider = os.environ.get("BALCON_LLM_PROVIDER", "anthropic").lower()
-        self.model = os.environ.get("BALCON_MODEL", DEFAULT_MODEL)
 
         if provider == "anthropic":
             import anthropic  # noqa: PLC0415
@@ -81,10 +78,10 @@ class LLMClient:
         messages: list[dict],
         *,
         system: str = "",
-        model: str | None = None,
+        model: str,
     ) -> tuple[str, int]:
         """Call the LLM and return (response_text, total_tokens_used)."""
-        return self._complete(messages, system=system, model=model or self.model)
+        return self._complete(messages, system=system, model=model)
 
     # ------------------------------------------------------------------
     # Provider implementations

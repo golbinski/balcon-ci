@@ -21,8 +21,10 @@ class FixerAgent(BaseAgent):
     output_schema = FixerOutput
     prompt_file = "fixer.md"
 
-    def __init__(self, config: FixerConfig, llm, gate, repo_root=None) -> None:
-        super().__init__(config, llm, gate, repo_root)
+    def __init__(
+        self, config: FixerConfig, llm, gate, repo_root=None, default_model="claude-sonnet-4-6"
+    ) -> None:
+        super().__init__(config, llm, gate, repo_root, default_model)
         self._fixer_config = config
 
     def run_on_findings(self, findings: list[Finding]) -> FixerOutput:

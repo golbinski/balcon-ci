@@ -76,12 +76,13 @@ def _build_agents(
     repo_root: Path,
 ) -> tuple[ScannerAgent, VerifierAgent, TriageAgent, FixerAgent, ReviewerAgent]:
     ac = config.agents
+    dm = config.default_model
     return (
-        ScannerAgent(ac.scanner, llm, gate, repo_root),
-        VerifierAgent(ac.verifier, llm, gate, repo_root),
-        TriageAgent(ac.triage, llm, gate, repo_root),
-        FixerAgent(ac.fixer, llm, gate, repo_root),
-        ReviewerAgent(ac.reviewer, llm, gate, repo_root),
+        ScannerAgent(ac.scanner, llm, gate, repo_root, dm),
+        VerifierAgent(ac.verifier, llm, gate, repo_root, dm),
+        TriageAgent(ac.triage, llm, gate, repo_root, dm),
+        FixerAgent(ac.fixer, llm, gate, repo_root, dm),
+        ReviewerAgent(ac.reviewer, llm, gate, repo_root, dm),
     )
 
 
