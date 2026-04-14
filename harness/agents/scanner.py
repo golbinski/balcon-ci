@@ -3,6 +3,7 @@
 Finds potential issues in the diff (review/review+fix) or in arborist
 semantic chunks (scan mode). Returns a ScannerOutput.
 """
+
 from __future__ import annotations
 
 from typing import Any

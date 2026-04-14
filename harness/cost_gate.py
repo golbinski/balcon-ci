@@ -5,6 +5,7 @@ Usage:
     gate = CostGate(budget=500_000)
     gate.charge(tokens_used)   # raises BudgetExceeded if over budget
 """
+
 from __future__ import annotations
 
 import logging
@@ -21,9 +22,7 @@ class BudgetExceeded(Exception):
     def __init__(self, used: int, budget: int) -> None:
         self.used = used
         self.budget = budget
-        super().__init__(
-            f"Token budget exceeded: used {used:,} of {budget:,} tokens"
-        )
+        super().__init__(f"Token budget exceeded: used {used:,} of {budget:,} tokens")
 
 
 class CostGate:

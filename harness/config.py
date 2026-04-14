@@ -3,6 +3,7 @@ Config loading for BalconCI.
 
 Reads .github/balcon-ci.yml from the repo root and returns a validated BalconConfig.
 """
+
 from __future__ import annotations
 
 import logging

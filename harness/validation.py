@@ -10,6 +10,7 @@ Checks enforced (spec §6.1):
   - location.line_start must be a valid line number in that file
   - confidence must be in [0.0, 1.0]
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,9 +41,7 @@ def validate_findings(findings: list[Finding], repo_root: Path) -> list[Finding]
         else:
             passing.append(f)
 
-    logger.info(
-        "Validation: %d/%d findings passed", len(passing), len(findings)
-    )
+    logger.info("Validation: %d/%d findings passed", len(passing), len(findings))
     return passing
 
 
@@ -66,9 +65,6 @@ def _check(finding: Finding, repo_root: Path) -> str | None:
         return f"could not read file: {exc}"
 
     if loc.line_start < 1 or loc.line_start > len(lines):
-        return (
-            f"line_start {loc.line_start} out of range "
-            f"(file has {len(lines)} lines)"
-        )
+        return f"line_start {loc.line_start} out of range (file has {len(lines)} lines)"
 
     return None

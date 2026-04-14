@@ -3,6 +3,7 @@
 Challenges scanner findings, eliminates hallucinations, adjusts confidence.
 Returns a VerifierOutput.
 """
+
 from __future__ import annotations
 
 from harness.agents.base import BaseAgent

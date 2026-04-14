@@ -3,6 +3,7 @@
 Routes each verified finding: auto_fix, human_issue, or skip.
 Respects always_escalate patterns. Returns a TriageOutput.
 """
+
 from __future__ import annotations
 
 from harness.agents.base import BaseAgent

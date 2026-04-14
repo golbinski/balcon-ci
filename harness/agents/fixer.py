@@ -4,6 +4,7 @@ Attempts automated fixes for auto_fix findings within the configured blast
 radius. Downgrades to human_issue if blast radius would be exceeded.
 Returns a FixerOutput.
 """
+
 from __future__ import annotations
 
 import logging
@@ -49,23 +50,26 @@ class FixerAgent(BaseAgent):
         """Return findings with decision=auto_fix and an eligible category."""
         eligible_categories = [c.lower() for c in self._fixer_config.eligible_categories]
         result = []
-        for f in findings:
-            if f.decision != "auto_fix":
+        for finding in findings:
+            if finding.decision != "auto_fix":
                 continue
             if eligible_categories:
-                category_lower = f.category.lower()
+                category_lower = finding.category.lower()
                 if not any(ec in category_lower for ec in eligible_categories):
                     logger.info(
                         "[%s] finding %s category %r not in eligible_categories — downgrading to human_issue",
                         self.name,
-                        f.id,
-                        f.category,
+                        finding.id,
+                        finding.category,
                     )
-                    f = f.model_copy(
-                        update={
-                            "decision": "human_issue",
-                            "escalation_reason": "category not in fixer eligible_categories",
-                        }
+                    result.append(
+                        finding.model_copy(
+                            update={
+                                "decision": "human_issue",
+                                "escalation_reason": "category not in fixer eligible_categories",
+                            }
+                        )
                     )
-            result.append(f)
+                    continue
+            result.append(finding)
         return result

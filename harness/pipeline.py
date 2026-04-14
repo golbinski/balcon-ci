@@ -10,6 +10,7 @@ Three entry points, one per mode:
 All three accept dry_run=True to write output to $GITHUB_STEP_SUMMARY instead of
 posting to GitHub.
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 # Dry-run output
 # ---------------------------------------------------------------------------
 
+
 def _dry_run_summary(lines: list[str]) -> None:
     """Append lines to $GITHUB_STEP_SUMMARY (no-op if env var not set)."""
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -50,6 +52,7 @@ def _dry_run_summary(lines: list[str]) -> None:
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
+
 
 def _handle_circuit_break(
     exc: CircuitBreak | BudgetExceeded,
@@ -85,6 +88,7 @@ def _build_agents(
 # ---------------------------------------------------------------------------
 # review mode
 # ---------------------------------------------------------------------------
+
 
 def run_review(
     pr_number: int,
@@ -124,8 +128,16 @@ def run_review(
         findings = rev_out.findings
 
         _post_review_results(
-            pr_number, scanner.name, verifier.name, triage.name, reviewer.name,
-            findings, rev_out, gh, gate, dry_run,
+            pr_number,
+            scanner.name,
+            verifier.name,
+            triage.name,
+            reviewer.name,
+            findings,
+            rev_out,
+            gh,
+            gate,
+            dry_run,
         )
 
     except (CircuitBreak, BudgetExceeded) as exc:
@@ -136,6 +148,7 @@ def run_review(
 # ---------------------------------------------------------------------------
 # review+fix mode
 # ---------------------------------------------------------------------------
+
 
 def run_review_fix(
     pr_number: int,
@@ -192,8 +205,16 @@ def run_review_fix(
             # changes_requested → loop again
 
         _post_review_results(
-            pr_number, scanner.name, verifier.name, triage.name, reviewer.name,
-            findings, rev_out, gh, gate, dry_run,
+            pr_number,
+            scanner.name,
+            verifier.name,
+            triage.name,
+            reviewer.name,
+            findings,
+            rev_out,
+            gh,
+            gate,
+            dry_run,
         )
 
     except (CircuitBreak, BudgetExceeded) as exc:
@@ -204,6 +225,7 @@ def run_review_fix(
 # ---------------------------------------------------------------------------
 # scan mode
 # ---------------------------------------------------------------------------
+
 
 def run_scan(
     config: BalconConfig,
@@ -251,8 +273,17 @@ def run_scan(
 
         # Post results: open issues for human_issue findings, PR for fixed ones
         _post_scan_results(
-            findings, scanner.name, verifier.name, triage.name,
-            fixer.name, reviewer.name, rev_out, gh, repo_root, gate, dry_run,
+            findings,
+            scanner.name,
+            verifier.name,
+            triage.name,
+            fixer.name,
+            reviewer.name,
+            rev_out,
+            gh,
+            repo_root,
+            gate,
+            dry_run,
         )
 
     except (CircuitBreak, BudgetExceeded) as exc:
@@ -264,6 +295,7 @@ def run_scan(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _apply_fixes(
     findings: list[Finding],
     fixer_name: str,
@@ -274,17 +306,16 @@ def _apply_fixes(
 ) -> None:
     """Push a commit for each successfully fixed finding (no-op in dry-run)."""
     fixed = [
-        f for f in findings
-        if f.fix_attempted and f.fix_result == "success" and f.files_changed
+        f for f in findings if f.fix_attempted and f.fix_result == "success" and f.files_changed
     ]
     if not fixed or dry_run:
         if dry_run and fixed:
-            _dry_run_summary([
-                f"### Would commit fixes\n\n"
-                + "\n".join(
-                    f"- `{f.location.file}`: {f.fix_summary}" for f in fixed
-                )
-            ])
+            _dry_run_summary(
+                [
+                    "### Would commit fixes\n\n"
+                    + "\n".join(f"- `{f.location.file}`: {f.fix_summary}" for f in fixed)
+                ]
+            )
         return
 
     all_files: list[str] = []
@@ -310,6 +341,7 @@ def _post_review_results(
     dry_run: bool,
 ) -> None:
     from harness.github import GitHubClient as _GH  # noqa: PLC0415
+
     table = _GH.findings_to_markdown(findings)
     body = (
         f"## balcon-ci review\n\n"
@@ -343,10 +375,7 @@ def _post_scan_results(
     from harness.github import GitHubClient as _GH  # noqa: PLC0415
 
     human_findings = [f for f in findings if f.decision == "human_issue"]
-    fixed_findings = [
-        f for f in findings
-        if f.fix_attempted and f.fix_result == "success"
-    ]
+    fixed_findings = [f for f in findings if f.fix_attempted and f.fix_result == "success"]
 
     summary_lines = [
         "## balcon-ci scan results",
@@ -384,8 +413,7 @@ def _post_scan_results(
             body=issue_body,
             labels=["balcon-ci", f.severity],
         )
-        # Annotate the finding with the issue URL
-        f = f.model_copy(update={"github_ref": url})
+        logger.info("Opened issue for finding %s: %s", f.id, url)
 
     # If there are fixed findings, commit them and open a PR
     if fixed_findings:
@@ -436,33 +464,32 @@ def _query_arborist(
             text=True,
             cwd=repo_root,
             timeout=120,
+            check=False,
         )
         if result.returncode != 0:
             logger.error("arborist-mcp error: %s", result.stderr)
             return [], []
 
         import json  # noqa: PLC0415
+
         data = json.loads(result.stdout)
         chunks = data.get("chunks", [])
 
         # Apply exclude_paths filter
         if exclude_paths:
             import fnmatch  # noqa: PLC0415
+
             chunks = [
-                c for c in chunks
-                if not any(
-                    fnmatch.fnmatch(c.get("file", ""), pat)
-                    for pat in exclude_paths
-                )
+                c
+                for c in chunks
+                if not any(fnmatch.fnmatch(c.get("file", ""), pat) for pat in exclude_paths)
             ]
 
         files_scanned = list({c["file"] for c in chunks if "file" in c})
         return chunks, files_scanned
 
     except FileNotFoundError:
-        logger.error(
-            "arborist-mcp not found. Install it or ensure it is on PATH."
-        )
+        logger.error("arborist-mcp not found. Install it or ensure it is on PATH.")
         return [], []
     except Exception as exc:  # noqa: BLE001
         logger.error("arborist-mcp query failed: %s", exc)
@@ -472,8 +499,7 @@ def _query_arborist(
 def _short_sha(repo_root: Path) -> str:
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=repo_root, text=True
+            ["git", "rev-parse", "--short", "HEAD"], cwd=repo_root, text=True
         ).strip()
     except Exception:  # noqa: BLE001
         return "unknown"
@@ -481,10 +507,13 @@ def _short_sha(repo_root: Path) -> str:
 
 def _default_branch(repo_root: Path) -> str:
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "origin/HEAD"],
-            cwd=repo_root, text=True
-        ).strip().removeprefix("origin/")
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "--abbrev-ref", "origin/HEAD"], cwd=repo_root, text=True
+            )
+            .strip()
+            .removeprefix("origin/")
+        )
     except Exception:  # noqa: BLE001
         return "main"
 

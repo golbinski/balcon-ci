@@ -15,6 +15,7 @@ Environment variables (all optional unless noted):
     BALCON_TOKEN_BUDGET   default: 500000
     BALCON_DRY_RUN        set to 1 to enable dry-run mode
 """
+
 from __future__ import annotations
 
 import logging

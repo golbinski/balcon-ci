@@ -4,6 +4,7 @@ GitHub API client for BalconCI.
 Wraps PyGitHub to provide the operations needed by the pipeline.
 All agent comments are signed with the agent name per spec §7.
 """
+
 from __future__ import annotations
 
 import logging
@@ -12,13 +13,12 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from github import Github, Auth
+from github import Auth, Github
 from github.GithubException import GithubException
 
 from harness.schemas import Finding
 
 if TYPE_CHECKING:
-    from github.PullRequest import PullRequest
     from github.Repository import Repository
 
 logger = logging.getLogger(__name__)
@@ -30,9 +30,7 @@ class GitHubClient:
         self._gh = Github(auth=Auth.Token(token))
         name = repo_full_name or os.environ.get("GITHUB_REPOSITORY", "")
         if not name:
-            raise ValueError(
-                "GitHub repo name not provided and GITHUB_REPOSITORY not set"
-            )
+            raise ValueError("GitHub repo name not provided and GITHUB_REPOSITORY not set")
         self._repo: Repository = self._gh.get_repo(name)
 
     # ------------------------------------------------------------------
@@ -128,7 +126,11 @@ class GitHubClient:
             ["git", "commit", "-m", message],
             cwd=repo_root,
             check=True,
-            env={**os.environ, "GIT_AUTHOR_NAME": "balcon-ci", "GIT_AUTHOR_EMAIL": "balcon-ci@github-actions"},
+            env={
+                **os.environ,
+                "GIT_AUTHOR_NAME": "balcon-ci",
+                "GIT_AUTHOR_EMAIL": "balcon-ci@github-actions",
+            },
         )
         subprocess.run(
             ["git", "push"],
@@ -163,8 +165,7 @@ class GitHubClient:
         """Render a list of findings as a Markdown table."""
         if not findings:
             return "_No findings._"
-        rows = ["| File | Line | Severity | Category | Decision |",
-                "|---|---|---|---|---|"]
+        rows = ["| File | Line | Severity | Category | Decision |", "|---|---|---|---|---|"]
         for f in findings:
             decision = f.decision or "—"
             rows.append(

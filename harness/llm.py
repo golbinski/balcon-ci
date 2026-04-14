@@ -4,10 +4,11 @@ Thin wrapper over the Anthropic SDK.
 Exposes a single .complete() interface so the rest of the harness is
 provider-agnostic (provider selected via BALCON_LLM_PROVIDER env var).
 """
+
 from __future__ import annotations
 
-import os
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +24,12 @@ class LLMClient:
 
         if provider == "anthropic":
             import anthropic  # noqa: PLC0415
+
             self._client = anthropic.Anthropic()
             self._complete = self._complete_anthropic
         elif provider == "bedrock":
             import anthropic  # noqa: PLC0415
+
             self._client = anthropic.AnthropicBedrock(
                 aws_region=os.environ.get("AWS_REGION", "us-east-1"),
             )

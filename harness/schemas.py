@@ -1,17 +1,17 @@
 """
 Pydantic v2 models for BalconCI — matches SPECIFICATION.md §6 exactly.
 """
+
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
-
+from pydantic import BaseModel, Field, field_validator
 
 # ---------------------------------------------------------------------------
 # Finding
 # ---------------------------------------------------------------------------
+
 
 class FindingLocation(BaseModel):
     file: str
@@ -31,26 +31,26 @@ class Finding(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
     # Added by verifier
-    verified: Optional[bool] = None
-    confidence_adjusted: Optional[float] = Field(default=None, ge=0.0, le=1.0)
-    rejection_reason: Optional[str] = None
+    verified: bool | None = None
+    confidence_adjusted: float | None = Field(default=None, ge=0.0, le=1.0)
+    rejection_reason: str | None = None
 
     # Added by triage
-    decision: Optional[Literal["auto_fix", "human_issue", "skip"]] = None
-    escalation_reason: Optional[str] = None
+    decision: Literal["auto_fix", "human_issue", "skip"] | None = None
+    escalation_reason: str | None = None
 
     # Added by fixer
-    fix_attempted: Optional[bool] = None
-    fix_result: Optional[Literal["success", "partial", "failed"]] = None
-    files_changed: Optional[list[str]] = None
-    lines_changed: Optional[int] = None
-    fix_summary: Optional[str] = None
+    fix_attempted: bool | None = None
+    fix_result: Literal["success", "partial", "failed"] | None = None
+    files_changed: list[str] | None = None
+    lines_changed: int | None = None
+    fix_summary: str | None = None
 
     # Added by reviewer
-    review_result: Optional[Literal["approved", "changes_requested"]] = None
-    review_iterations: Optional[int] = None
-    review_feedback: Optional[str] = None
-    github_ref: Optional[str] = None
+    review_result: Literal["approved", "changes_requested"] | None = None
+    review_iterations: int | None = None
+    review_feedback: str | None = None
+    github_ref: str | None = None
 
     @field_validator("location")
     @classmethod
@@ -63,6 +63,7 @@ class Finding(BaseModel):
 # ---------------------------------------------------------------------------
 # Agent outputs
 # ---------------------------------------------------------------------------
+
 
 class EvidenceCheck(BaseModel):
     finding_id: str
@@ -101,7 +102,7 @@ class FixerOutput(BaseModel):
 class ReviewerOutput(BaseModel):
     result: Literal["approved", "changes_requested", "needs_human", "circuit_break"]
     findings: list[Finding]
-    feedback: Optional[str] = None
+    feedback: str | None = None
     reasoning: str
 
 
@@ -109,8 +110,9 @@ class ReviewerOutput(BaseModel):
 # Per-agent config models
 # ---------------------------------------------------------------------------
 
+
 class AgentConfig(BaseModel):
-    name: Optional[str] = None
+    name: str | None = None
     instructions: list[str] = Field(default_factory=list)
     context: list[str] = Field(default_factory=list)
 
@@ -141,6 +143,7 @@ class ReviewerConfig(AgentConfig):
 # Codebase scanning config
 # ---------------------------------------------------------------------------
 
+
 class CodebaseScanningConfig(BaseModel):
     queries: list[str] = Field(default_factory=list)
     exclude_paths: list[str] = Field(default_factory=list)
@@ -153,6 +156,7 @@ class CodebaseConfig(BaseModel):
 # ---------------------------------------------------------------------------
 # Top-level BalconConfig
 # ---------------------------------------------------------------------------
+
 
 class AgentsConfig(BaseModel):
     scanner: ScannerConfig = Field(default_factory=ScannerConfig)

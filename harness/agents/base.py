@@ -14,6 +14,7 @@ Subclasses set:
   output_schema   type         the Pydantic model to parse LLM output into
   prompt_file     str          filename inside prompts/ directory
 """
+
 from __future__ import annotations
 
 import json
@@ -106,6 +107,7 @@ class BaseAgent:
         # Layer 3: per-repo agent instructions
         if self._config.instructions:
             from harness.config import load_file_content  # noqa: PLC0415
+
             instructions = load_file_content(self._repo_root, self._config.instructions)
             if instructions:
                 parts.append(f"## Agent instructions\n\n{instructions}")
@@ -113,6 +115,7 @@ class BaseAgent:
         # Layer 4: per-repo context documents
         if self._config.context:
             from harness.config import load_file_content  # noqa: PLC0415
+
             context = load_file_content(self._repo_root, self._config.context)
             if context:
                 parts.append(f"## Reference context\n\n{context}")
@@ -153,6 +156,4 @@ class BaseAgent:
         try:
             return self.output_schema.model_validate(data)
         except ValidationError as exc:
-            raise CircuitBreak(
-                self.name, f"Schema validation error: {exc}", raw
-            ) from exc
+            raise CircuitBreak(self.name, f"Schema validation error: {exc}", raw) from exc
